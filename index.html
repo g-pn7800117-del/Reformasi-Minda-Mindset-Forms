@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mindset Quiz</title>
+<style>
+:root{--ink:#1c2b36;--paper:#f3f7f8;--card:#fff;--teal:#0f766e;--sun:#f2b632;--line:#d5e0e4;--mute:#4b5f6b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.55 Georgia,"Times New Roman",serif}
+main{max-width:680px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:1.8rem;margin:0 0 4px}
+p.sub{margin:0 0 24px;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px}
+label{display:block;font-weight:bold;margin:14px 0 6px}
+input,select{width:100%;padding:11px;font:inherit;border:1px solid var(--line);border-radius:6px;background:#fff}
+button{font:inherit;font-weight:bold;padding:11px 22px;border:0;border-radius:6px;background:var(--teal);color:#fff;cursor:pointer;margin-top:20px}
+button.alt{background:transparent;color:var(--teal);border:1px solid var(--teal);margin-right:8px}
+button:disabled{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.bar{height:6px;background:var(--line);border-radius:3px;margin-bottom:14px}
+.bar i{display:block;height:100%;background:var(--sun);border-radius:3px;transition:width .25s}
+.meta{color:var(--mute);margin:0 0 8px}
+.q{font-size:1.15rem;margin:0}
+.en{font-style:italic;color:var(--mute);margin:4px 0 14px}
+.opt{display:block;width:100%;text-align:left;margin:8px 0 0;padding:12px 14px;background:#fff;color:var(--ink);border:1px solid var(--line);font-weight:normal}
+.opt small{color:var(--mute);font-style:italic}
+.opt:hover{border-color:var(--teal)}
+.opt.sel{border-color:var(--teal);background:#e6f3f1}
+.hide{display:none}
+.score{font-size:3rem;margin:6px 0}
+table{width:100%;border-collapse:collapse;margin-top:14px;font-size:.9rem}
+td,th{padding:6px 4px;border-top:1px solid var(--line);text-align:left}
+</style>
+</head>
+<body>
+<main>
+<h1>Mindset Quiz</h1>
+<p class="sub" id="sub">Masukkan maklumat anda, kemudian jawab semua soalan.<br><i>Enter your details, then answer all the questions.</i></p>
+
+<section class="card" id="start">
+  <label for="name">Nama :</label>
+  <input id="name" autocomplete="name">
+  <label for="session">Sesi :</label>
+  <select id="session"></select>
+  <button id="go">Mula / Start</button>
+</section>
+
+<section class="card hide" id="quiz">
+  <div class="bar"><i id="prog"></i></div>
+  <p class="meta" id="count"></p>
+  <p class="q" id="bm"></p>
+  <p class="en" id="en"></p>
+  <div id="opts"></div>
+  <button id="back" class="alt" disabled>Kembali / Back</button>
+  <button id="next" disabled>Seterusnya / Next</button>
+</section>
+
+<section class="card hide" id="result">
+  <p class="meta" id="who"></p>
+  <div class="score" id="score"></div>
+  <p id="msg"></p>
+  <table id="review"></table>
+  <p style="margin-top:20px">
+  <button id="again" class="alt">Cuba lagi / Try again</button>
+  <button id="print" class="alt">Cetak / Print</button></p>
+</section>
+</main>
+
+<script>
+/* ===== EDIT HERE ===== */
+const SESSIONS = ["Pagi", "Petang"];
+const BANDS = [
+  { min: 45, max: 60, text: "Strong Growth Mindset" },
+  { min: 34, max: 44, text: "Growth Mindset with some Fixed Ideas" },
+  { min: 21, max: 33, text: "Fixed Mindset with some Growth Ideas" },
+  { min: 0,  max: 20, text: "Strong Fixed Mindset" }
+];
+// Items where SS=0, S=1, TS=2, STS=3. All other items are scored SS=3, S=2, TS=1, STS=0.
+const FORWARD = [1,4,7,8,11,12,14,16,17,20];
+/* ===================== */
+
+const CHOICES = [
+  { code: "SS",  bm: "Sangat Setuju",       en: "Strongly Agree" },
+  { code: "S",   bm: "Setuju",              en: "Agree" },
+  { code: "TS",  bm: "Tidak Setuju",        en: "Disagree" },
+  { code: "STS", bm: "Sangat Tidak Setuju", en: "Strongly Disagree" }
+];
+
+const ITEMS = [
+ ["Kecerdasan adalah sesuatu yang sangat asas mengenai diri anda sahaja dan tidak boleh berubah dengan banyak.","Your intelligence is something very basic about you that you can't change very much."],
+ ["Tidak kira berapa banyak kepintaran yang dimiliki, anda mampu berubah sedikit.","No matter how much intelligence you have, you can always change it quite a bit."],
+ ["Kepintaran yang anda miliki mampu mengubah anda dengan ketara.","You can always substantially change how intelligent you are."],
+ ["Anda jenis orang yang tertentu dan tidak banyak boleh dilakukan untuk benar-benar berubah.","You are a certain kind of person, and there is not much that can be done to really change that."],
+ ["Anda sentiasa boleh mengubah perkara-perkara asas walaupun anda jenis orang tertentu.","You can always change basic things about the kind of person you are."],
+ ["Bakat muzik boleh dipelajari oleh sesiapa sahaja.","Music talent can be learned by anyone."],
+ ["Hanya beberapa orang sahaja yang benar-benar bagus dalam sukan, maka anda perlu \u201cbakat semula jadi\u201d untuk termasuk dalam golongan tersebut.","Only a few people will be truly good at sports \u2013 you have to be \u201cborn with it\u201d."],
+ ["Matematik adalah lebih mudah untuk belajar jika anda lelaki atau mungkin datang daripada budaya yang menghargai matematik.","Math is much easier to learn if you are male or maybe come from a culture who values math."],
+ ["Anda akan menjadi lebih baik jika anda bekerja lebih kuat.","The harder you work at something, the better you will be at it."],
+ ["Tidak kira apa jenis trait personaliti yang anda miliki, anda sentiasa boleh berubah dengan ketara.","No matter what kind of person you are, you can always change substantially."],
+ ["Mencuba sesuatu yang baru memberi tekanan kepada anda dan anda cuba mengelakkannya.","Trying new things is stressful for me and I avoid it."],
+ ["Ada sesetengah orang baik dan ikhlas dan ada juga yang sebaliknya. Maka tidak selalulah orang boleh berubah.","Some people are good and kind, and some are not \u2013 it's not often that people change."],
+ ["Anda menghargai apabila terdapat individu seperti ibu bapa, jurulatih, guru yang memberi maklum balas berhubung prestasi anda.","I appreciate when people, parents, coaches, teachers give me feedback about my performance."],
+ ["Anda sering marah apabila mendapat maklum balas mengenai prestasi diri sendiri.","I often get angry when I get feedback about my performance."],
+ ["Semua manusia yang tidak mengalami kecederaan otak atau kecacatan kelahiran mampu mempelajari pembelajaran yang sama.","All human beings without a brain injury or birth defect are capable of the same amount of learning."],
+ ["Anda boleh mempelajari sesuatu yang baru, tetapi anda benar-benar tidak boleh mengubah pemikiran atau kepintaran yang anda miliki.","You can learn new things, but you can't really change how intelligent you are."],
+ ["Anda boleh melakukan banyak perkara dengan cara yang berbeza tetapi bahagian yang penting daripada diri anda tidak boleh diubah.","You can do things differently, but the important parts of who you are can't really be changed."],
+ ["Manusia pada dasarnya baik tetapi dalam membuat keputusan kadang-kadang amat dahsyat.","Human beings are basically good, but sometimes make terrible decisions."],
+ ["Satu sebab penting mengapa anda melakukan kerja-kerja sekolah atau urusan pejabat adalah kerana anda suka mempelajari sesuatu yang baru.","An important reason why I do my school work or office affairs is that I like to learn new things."],
+ ["Orang yang benar-benar bijak tidak perlu berusaha keras.","Truly smart people do not need to try hard."]
+];
+const MAX = ITEMS.length * 3;
+
+const $ = id => document.getElementById(id);
+let i = 0, answers = [], person = {};
+$("session").innerHTML = '<option value="">-- Pilih sesi --</option>' + SESSIONS.map(s => `<option>${s}</option>`).join("");
+
+function points(item, choice){ return FORWARD.includes(item) ? choice : 3 - choice; }
+function show(id){ ["start","quiz","result"].forEach(x => $(x).classList.toggle("hide", x !== id)); }
+
+$("go").onclick = () => {
+  const n = $("name").value.trim();
+  if(!n){ $("name").focus(); $("sub").innerHTML = "Sila masukkan nama anda.<br><i>Please enter your name.</i>"; return; }
+  if(!$("session").value){ $("session").focus(); $("sub").innerHTML = "Sila pilih sesi: Pagi atau Petang.<br><i>Please choose a session: Pagi or Petang.</i>"; return; }
+  person = { name: n, session: $("session").value };
+  i = 0; answers = [];
+  show("quiz"); render();
+};
+
+function render(){
+  $("count").textContent = `Soalan / Question ${i+1} / ${ITEMS.length}`;
+  $("prog").style.width = (i / ITEMS.length * 100) + "%";
+  $("bm").textContent = ITEMS[i][0];
+  $("en").textContent = ITEMS[i][1];
+  $("opts").innerHTML = "";
+  CHOICES.forEach((c, k) => {
+    const b = document.createElement("button");
+    b.className = "opt" + (answers[i] === k ? " sel" : "");
+    b.innerHTML = `${c.code}. ${c.bm} <small>(${c.en})</small>`;
+    b.onclick = () => { answers[i] = k; render(); };
+    $("opts").appendChild(b);
+  });
+  $("back").disabled = i === 0;
+  $("next").disabled = answers[i] === undefined;
+  $("next").textContent = i === ITEMS.length - 1 ? "Selesai / Finish" : "Seterusnya / Next";
+}
+
+$("back").onclick = () => { i--; render(); };
+$("next").onclick = () => { if(i < ITEMS.length - 1){ i++; render(); } else finish(); };
+
+function finish(){
+  const pts = answers.map((a, k) => points(k + 1, a));
+  const total = pts.reduce((s, p) => s + p, 0);
+  $("who").textContent = `Nama: ${person.name} \u2014 Sesi: ${person.session}`;
+  $("score").textContent = `${total} / ${MAX}`;
+  const band = BANDS.find(b => total >= b.min && total <= b.max);
+  $("msg").textContent = band ? band.text : "";
+  $("review").innerHTML = "<tr><th>No.</th><th>Jawapan / Answer</th><th>Skor / Score</th></tr>" +
+    pts.map((p, k) => `<tr><td>${k+1}</td><td>${CHOICES[answers[k]].code}</td><td>${p}</td></tr>`).join("");
+  $("prog").style.width = "100%";
+  show("result");
+}
+
+$("again").onclick = () => { show("start"); };
+$("print").onclick = () => window.print();
+</script>
+</body>
+</html>
